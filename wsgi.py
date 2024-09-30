@@ -167,15 +167,14 @@ def assign_staff_command(course_code, lecturer_id, tutor_id, ta_id):
     print(f'Teaching Assistant: {ta.firstName} {ta.lastName}' if ta else "None")
 
 
-# View course
-@app.cli.command("course view")
+@course_cli.command("view", help="View course details")
 @click.argument("course_code")
-def view_course_details(course_code):
+def view_course_details_command(course_code):
     course = Course.query.filter_by(courseCode=course_code).first()
     
     if not course:
         print(f"Course {course_code} not found!")
-        return None
+        return
 
     # Fetch staff details using the specific models
     lecturer = Lecturer.query.get(course.lecturer_id)
@@ -191,17 +190,13 @@ def view_course_details(course_code):
         "Teaching Assistant": f"{ta.firstName} {ta.lastName}" if ta else "None",
     }
     
-    return details
+    # Print details instead of returning
+    print("Course Details:")
+    for key, value in details.items():
+        print(f"{key}: {value}")
 
-# CLI Command to view course details
-@app.cli.command("course view")
-@click.argument("course_code")
-def view_course_command(course_code):
-    """View details of a course by COURSE_CODE."""
-    details = view_course_details(course_code)
-    if details:
-        for key, value in details.items():
-            print(f"{key}: {value}")
+# Register the command group with the Flask app
+
 
 app.cli.add_command(course_cli)
 
