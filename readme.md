@@ -5,189 +5,220 @@
 
 ![Tests](https://github.com/uwidcit/flaskmvc/actions/workflows/dev.yml/badge.svg)
 
-# Flask MVC Template
-A template for flask applications structured in the Model View Controller pattern [Demo](https://dcit-flaskmvc.herokuapp.com/). [Postman Collection](https://documenter.getpostman.com/view/583570/2s83zcTnEJ)
-
-
-# Dependencies
-* Python3/pip3
-* Packages listed in requirements.txt
-
-# Installing Dependencies
-```bash
-$ pip install -r requirements.txt
-```
-
-# Configuration Management
-
-
-Configuration information such as the database url/port, credentials, API keys etc are to be supplied to the application. However, it is bad practice to stage production information in publicly visible repositories.
-Instead, all config is provided by a config file or via [environment variables](https://linuxize.com/post/how-to-set-and-list-environment-variables-in-linux/).
-
-## In Development
-
-When running the project in a development environment (such as gitpod) the app is configured via default_config.py file in the App folder. By default, the config for development uses a sqlite database.
-
-default_config.py
-```python
-SQLALCHEMY_DATABASE_URI = "sqlite:///temp-database.db"
-SECRET_KEY = "secret key"
-JWT_ACCESS_TOKEN_EXPIRES = 7
-ENV = "DEVELOPMENT"
-```
-
-These values would be imported and added to the app in load_config() function in config.py
-
-config.py
-```python
-# must be updated to inlude addtional secrets/ api keys & use a gitignored custom-config file instad
-def load_config():
-    config = {'ENV': os.environ.get('ENV', 'DEVELOPMENT')}
-    delta = 7
-    if config['ENV'] == "DEVELOPMENT":
-        from .default_config import JWT_ACCESS_TOKEN_EXPIRES, SQLALCHEMY_DATABASE_URI, SECRET_KEY
-        config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_DATABASE_URI
-        config['SECRET_KEY'] = SECRET_KEY
-        delta = JWT_ACCESS_TOKEN_EXPIRES
-...
-```
-
-## In Production
-
-When deploying your application to production/staging you must pass
-in configuration information via environment tab of your render project's dashboard.
-
-![perms](./images/fig1.png)
-
 # Flask Commands
-
-wsgi.py is a utility script for performing various tasks related to the project. You can use it to import and test any code in the project. 
-You just need create a manager command function, for example:
-
-```python
-# inside wsgi.py
-
-user_cli = AppGroup('user', help='User object commands')
-
-@user_cli.cli.command("create-user")
-@click.argument("username")
-@click.argument("password")
-def create_user_command(username, password):
-    create_user(username, password)
-    print(f'{username} created!')
-
-app.cli.add_command(user_cli) # add the group to the cli
-
-```
-
-Then execute the command invoking with flask cli with command name and the relevant parameters
-
-```bash
-$ flask user create bob bobpass
-```
-
-
-# Running the Project
-
-_For development run the serve command (what you execute):_
-```bash
-$ flask run
-```
-
-_For production using gunicorn (what the production server executes):_
-```bash
-$ gunicorn wsgi:app
-```
-
-# Deploying
-You can deploy your version of this app to render by clicking on the "Deploy to Render" link above.
-
-# Initializing the Database
-When connecting the project to a fresh empty database ensure the appropriate configuration is set then file then run the following command. This must also be executed once when running the app on heroku by opening the heroku console, executing bash and running the command in the dyno.
-
 ```bash
 $ flask init
 ```
 
-# Database Migrations
-If changes to the models are made, the database must be'migrated' so that it can be synced with the new models.
-Then execute following commands using manage.py. More info [here](https://flask-migrate.readthedocs.io/en/latest/)
 
+# MOCK DATA USED
+
+# Staff Members
+| **Lecturers** | **First Name** | **Last Name** |
+|---------------|----------------|---------------|
+|      1        | John           | Doe           |
+|      2        | Jane           | Dee           |
+|      3        | Emma           | George        |
+
+# TAs
+| **TAs**        | **First Name** | **Last Name** |
+|----------------|----------------|---------------|
+| TA 1           | Bruce          | Wayne         |
+| TA 2           | Clark          | Kent          |
+| TA 3           | Peter          | Parker        |
+
+# Tutors
+| **Tutors**     | **First Name** | **Last Name** |
+|----------------|----------------|---------------|
+| Tutor 1        | Miles          | Morales       |
+| Tutor 2        | Miguel         | O'Hara        |
+| Tutor 3        | Gwen           | Stacy         |
+
+# Courses
+| **Course Code** | **Course Name**           | **Lecturer**    | **Tutor**         | **TA**           |
+|-----------------|---------------------------|-----------------|-------------------|------------------|
+| COMP101         | Intro to Programming       | John Doe        | Miles Morales     | Bruce Wayne      |
+| COMP102         | Data Analytics             | Jane Dee        | Miguel O'Hara     | Clark Kent       |
+| COMP103         | Data Structures            | Emma George     | Gwen Stacy        | Peter Parker     |
+
+
+# REQUIRED COMMANDS
+
+# 1. Create Course
 ```bash
-$ flask db init
-$ flask db migrate
-$ flask db upgrade
-$ flask db --help
+$ flask course create "COURSE_CODE" "COURSE_NAME" "LECTURER_ID" "TUTOR_ID" "TA_ID"
 ```
-
-# Testing
-
-## Unit & Integration
-Unit and Integration tests are created in the App/test. You can then create commands to run them. Look at the unit test command in wsgi.py for example
+For example:
+```bash
+$ flask course create "COMP105" "Computer Architecture" 1 3 2
+```
 
 ```python
-@test.command("user", help="Run User tests")
-@click.argument("type", default="all")
-def user_tests_command(type):
-    if type == "unit":
-        sys.exit(pytest.main(["-k", "UserUnitTests"]))
-    elif type == "int":
-        sys.exit(pytest.main(["-k", "UserIntegrationTests"]))
-    else:
-        sys.exit(pytest.main(["-k", "User"]))
+
+#Creating a course
+
+course_cli = AppGroup('course', help='Course object commands')
+
+@course_cli.command("create", help="Creates a course")
+@click.argument("course_code")
+@click.argument("course_name")
+@click.argument("lecturer_id")
+@click.argument("tutor_id")
+@click.argument("ta_id")
+
+def create_course_command(course_code, course_name, lecturer_id, tutor_id, ta_id):
+    course = create_course(course_code, course_name, lecturer_id, tutor_id, ta_id)
+
+    lecturer = Lecturer.query.get(lecturer_id)  # Use Lecturer instead of Staff
+    ta = TA.query.get(ta_id)                     # Use TA instead of Staff
+    tutor = Tutor.query.get(tutor_id)            # Use Tutor instead of Staff
+
+    lecturer_name = f"{lecturer.firstName} {lecturer.lastName}" if lecturer else "None"
+    tutor_name = f"{tutor.firstName} {tutor.lastName}" if tutor else "None"
+    ta_name = f"{ta.firstName} {ta.lastName}" if ta else "None"
+
+    print(f'Course {course.courseCode} created with:')
+    print(f'Lecturer: {lecturer_name}')
+    print(f'Tutor: {tutor_name}')
+    print(f'Teaching Assistant: {ta_name}')
 ```
 
-You can then execute all user tests as follows
-
+# 2.Create Lecturer/TA/Tutor
 ```bash
-$ flask test user
+$ flask course create_lecturer "first_name" "last_name"
 ```
-
-You can also supply "unit" or "int" at the end of the comand to execute only unit or integration tests.
-
-You can run all application tests with the following command
-
 ```bash
-$ pytest
+$ flask course create_ta "first_name" "last_name"
 ```
-
-## Test Coverage
-
-You can generate a report on your test coverage via the following command
-
 ```bash
-$ coverage report
+$ flask course create_tutor "first_name" "last_name"
 ```
-
-You can also generate a detailed html report in a directory named htmlcov with the following comand
-
+For example:
 ```bash
-$ coverage html
+$ flask course create_lecturer "Jacob" "Jay"
 ```
-
-# Troubleshooting
-
-## Views 404ing
-
-If your newly created views are returning 404 ensure that they are added to the list in main.py.
+```bash
+$ flask course create_ta "Po" "Lo"
+```
+```bash
+$ flask course create_tutor "Jamie" "Fox"
+```
 
 ```python
-from App.views import (
-    user_views,
-    index_views
-)
 
-# New views must be imported and added to this list
-views = [
-    user_views,
-    index_views
-]
+#Create Lecturer
+
+@course_cli.command("create_lecturer", help="Creates a lecturer")
+@click.argument("first_name")
+@click.argument("last_name")
+def create_lecturer_command(first_name, last_name):
+    lecturer = create_lecturer(first_name, last_name)
+    print(f'Lecturer {lecturer.firstName} {lecturer.lastName} created!')
+
+#Create TA
+
+@course_cli.command("create_ta", help="Creates a TA")
+@click.argument("first_name")
+@click.argument("last_name")
+def create_ta_command(first_name, last_name):
+    ta = create_ta(first_name, last_name)
+    print(f'TA {ta.firstName} {ta.lastName} created!')
+
+#Create Tutor
+
+@course_cli.command("create_tutor", help="Creates a tutor")
+@click.argument("first_name")
+@click.argument("last_name")
+def create_tutor_command(first_name, last_name):
+    tutor = create_tutor(first_name, last_name)
+    print(f'Tutor {tutor.firstName} {tutor.lastName} created!')
 ```
 
-## Cannot Update Workflow file
+# 3.Assign Lecturer/TA/Tutor to Course
+```bash
+$ flask course assign "COURSE_CODE" "LECTURER_ID" "TUTOR_ID" "TA_ID"
+```
 
-If you are running into errors in gitpod when updateding your github actions file, ensure your [github permissions](https://gitpod.io/integrations) in gitpod has workflow enabled ![perms](./images/gitperms.png)
+For example:
+```bash
+$ flask course assign "COMP101" 1 1 1
+```
 
-## Database Issues
+```python
 
-If you are adding models you may need to migrate the database with the commands given in the previous database migration section. Alternateively you can delete you database file.
+#Assign staff
+
+@course_cli.command("assign", help="Assign staff to a course")
+@click.argument("course_code")
+@click.argument("lecturer_id")
+@click.argument("tutor_id")
+@click.argument("ta_id")
+def assign_staff_command(course_code, lecturer_id, tutor_id, ta_id):
+    course = Course.query.filter_by(courseCode=course_code).first()
+    
+    if not course:
+        print(f"Course {course_code} not found!")
+        return
+
+    #Assign staff members
+    course.lecturer_id = lecturer_id
+    course.tutor_id = tutor_id
+    course.ta_id = ta_id
+
+    #Fetch staff details for confirmation
+    lecturer = Lecturer.query.get(lecturer_id)
+    tutor = Tutor.query.get(tutor_id)
+    ta = TA.query.get(ta_id)
+
+    db.session.commit()  
+
+    # Print out the assignment details
+    print(f'Staff assigned to course {course_code}:')
+    print(f'Lecturer: {lecturer.firstName} {lecturer.lastName}' if lecturer else "None")
+    print(f'Tutor: {tutor.firstName} {tutor.lastName}' if tutor else "None")
+    print(f'Teaching Assistant: {ta.firstName} {ta.lastName}' if ta else "None")
+```
+
+# 4.View Course Staff
+```bash
+$ flask course view "COURSE_CODE"
+```
+
+For example:
+```bash
+$ flask course view "COMP101"
+```
+
+```python
+
+#Viewing Courses
+
+@course_cli.command("view", help="View course details")
+@click.argument("course_code")
+def view_course_details_command(course_code):
+    course = Course.query.filter_by(courseCode=course_code).first()
+    
+    if not course:
+        print(f"Course {course_code} not found!")
+        return
+
+    # Fetch staff details using the specific models
+    lecturer = Lecturer.query.get(course.lecturer_id)
+    tutor = Tutor.query.get(course.tutor_id)
+    ta = TA.query.get(course.ta_id)
+
+    # Prepare course details for display
+    details = {
+        "Course Code": course.courseCode,
+        "Course Name": course.courseName,
+        "Lecturer": f"{lecturer.firstName} {lecturer.lastName}" if lecturer else "None",
+        "Tutor": f"{tutor.firstName} {tutor.lastName}" if tutor else "None",
+        "Teaching Assistant": f"{ta.firstName} {ta.lastName}" if ta else "None",
+    }
+    
+    # Print details instead of returning
+    print("Course Details:")
+    for key, value in details.items():
+        print(f"{key}: {value}")
+```
+
